@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="style.css"/>
+    <title>Sand Simulation</title>
+</head>
+<body>
+<canvas
+        id="canvas"
+        width="750x"
+        height="750x"
+        style="background-color: black; width: 750px; height: 750px;">
+</canvas>
+
+<button id="reset-btn">
+    Reset
+</button>
+
+<script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const x = 750;
+    const y = 750;
+    const square_scale = 4;
+    const gravity = 0.5;
+
+    let arr = [];
+
+    function createArray() {
+        for (let i = 0; i < y / square_scale; i++) {
+            const newRow = Array.from({ length: x / square_scale }, () => 0);
+            arr.push(newRow);
+        }
+
+        window.requestAnimationFrame(generate_squares);
+    }
+
+    function moveSquares() {
+        let moved = false;
+
+        for (let i = arr.length - 2; i >= 0; i--) {
+            for (let j = 0; j < arr[i].length; j++) {
+                if (arr[i][j] === 1) {
+                    if (i < arr.length - 1 && arr[i + 1][j] === 0) {
+                        arr[i][j] = 0;
+                        arr[i + 1][j] = 1;
+                        moved = true;
+                    } else {
+                        // Altında boş alan yoksa, yanındaki boş alanlara bak
+                        if (j > 0 && j < arr[i].length - 1) {
+                            if (arr[i + 1][j - 1] === 0 || arr[i + 1][j + 1] === 0) {
+                                if (Math.random() < 0.5 && arr[i + 1][j - 1] === 0) {
+                                    arr[i][j] = 0;
+                                    arr[i + 1][j - 1] = 1;
+                                    moved = true;
+                                } else if (arr[i + 1][j + 1] === 0) {
+                                    arr[i][j] = 0;
+                                    arr[i + 1][j + 1] = 1;
+                                    moved = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (moved) {
+            setTimeout(moveSquares, 100);
+        }
+    }
+
+    canvas.addEventListener("mousemove", function (event) {
+        const location = {
+            x: Math.round(event.x / square_scale),
+            y: Math.round(event.y / square_scale)
+        };
+
+        arr[location.y][location.x] = 1;
+        moveSquares();
+    });
+
+    function generate_squares() {
+        ctx.clearRect(0, 0, x, y)
+        arr.forEach((row, y_index) => {
+            row.forEach((val, x_index) => {
+                if (val === 1) {
+                    const color = `hsl(${y_index * 5}, 70%, 50%)`; // HSL renk değerini y eksenine göre belirliyoruz
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x_index * square_scale, y_index * square_scale, square_scale, square_scale);
+                } else {
+                    ctx.strokeStyle = "#1f1c1c";
+                    ctx.strokeRect(x_index * square_scale, y_index * square_scale, square_scale, square_scale);
+                }
+            });
+        });
+        window.requestAnimationFrame(generate_squares);
+    }
+
+    createArray();
+</script>
+</body>
+</body>
+</html>
