@@ -11,9 +11,9 @@
 <body>
 <canvas
         id="canvas"
-        width="750x"
-        height="750x"
-        style="background-color: black; width: 750px; height: 750px;">
+        width="400px"
+        height="400px"
+        style="background-color: black; width: 400px; height: 400px;">
 </canvas>
 
 <button id="reset-btn">
@@ -23,16 +23,16 @@
 <script>
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    const x = 750;
-    const y = 750;
-    const square_scale = 4;
-    const gravity = 0.5;
+    const x = 400;
+    const y = 400;
+    const square_scale = 2;
 
     let arr = [];
+    let obstacles = [];
 
     function createArray() {
         for (let i = 0; i < y / square_scale; i++) {
-            const newRow = Array.from({ length: x / square_scale }, () => 0);
+            const newRow = Array.from({length: x / square_scale}, () => 0);
             arr.push(newRow);
         }
 
@@ -45,22 +45,30 @@
         for (let i = arr.length - 2; i >= 0; i--) {
             for (let j = 0; j < arr[i].length; j++) {
                 if (arr[i][j] === 1) {
-                    if (i < arr.length - 1 && arr[i + 1][j] === 0) {
-                        arr[i][j] = 0;
-                        arr[i + 1][j] = 1;
-                        moved = true;
+                    // Karelerin altında boş alan veya engel var mı kontrol et
+                    if ((i < arr.length - 1 && (arr[i + 1][j] === 0 || arr[i + 1][j] === 2)) || (i === arr.length - 2 && arr[i + 1][j] !== 1)) {
+                        if (!isObstacle(j, i + 1)) { // Engellerin üzerinde değil mi?
+                            arr[i][j] = 0;
+                            arr[i + 1][j] = 1;
+                            moved = true;
+                        }
                     } else {
                         // Altında boş alan yoksa, yanındaki boş alanlara bak
                         if (j > 0 && j < arr[i].length - 1) {
-                            if (arr[i + 1][j - 1] === 0 || arr[i + 1][j + 1] === 0) {
-                                if (Math.random() < 0.5 && arr[i + 1][j - 1] === 0) {
-                                    arr[i][j] = 0;
-                                    arr[i + 1][j - 1] = 1;
-                                    moved = true;
-                                } else if (arr[i + 1][j + 1] === 0) {
-                                    arr[i][j] = 0;
-                                    arr[i + 1][j + 1] = 1;
-                                    moved = true;
+                            if (((arr[i + 1][j - 1] === 0 || arr[i + 1][j - 1] === 2) && (arr[i][j - 1] === 0 || arr[i][j - 1] === 2)) ||
+                                ((arr[i + 1][j + 1] === 0 || arr[i + 1][j + 1] === 2) && (arr[i][j + 1] === 0 || arr[i][j + 1] === 2))) {
+                                if (Math.random() < 0.5 && (arr[i + 1][j - 1] === 0 || arr[i + 1][j - 1] === 2) && (arr[i][j - 1] === 0 || arr[i][j - 1] === 2)) {
+                                    if (!isObstacle(j - 1, i + 1)) { // Engellerin üzerinde değil mi?
+                                        arr[i][j] = 0;
+                                        arr[i + 1][j - 1] = 1;
+                                        moved = true;
+                                    }
+                                } else if ((arr[i + 1][j + 1] === 0 || arr[i + 1][j + 1] === 2) && (arr[i][j + 1] === 0 || arr[i][j + 1] === 2)) {
+                                    if (!isObstacle(j + 1, i + 1)) { // Engellerin üzerinde değil mi?
+                                        arr[i][j] = 0;
+                                        arr[i + 1][j + 1] = 1;
+                                        moved = true;
+                                    }
                                 }
                             }
                         }
@@ -74,6 +82,15 @@
         }
     }
 
+    function isObstacle(x, y) {
+        for (let i = 0; i < obstacles.length; i++) {
+            if (obstacles[i].x === x && obstacles[i].y === y) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     canvas.addEventListener("mousemove", function (event) {
         const location = {
             x: Math.round(event.x / square_scale),
@@ -83,6 +100,35 @@
         arr[location.y][location.x] = 1;
         moveSquares();
     });
+
+    // Yatay bir çizgi oluştur
+    function createObstacles() {
+        const centerY = Math.round(y / square_scale / 2); // Yarı yükseklik
+
+        // X ekseninde çizginin uzunluğu
+        const lineLength = Math.round(x / square_scale / 2);
+
+        // Çizginin her bir noktasını engel olarak işaretle
+        for (let i = 0; i < lineLength; i++) {
+            obstacles.push({ x: i, y: centerY });
+        }
+    }
+
+    // Engelleri çiz
+    function drawObstacles() {
+        obstacles.forEach((point) => {
+            const x_index = point.x;
+            const y_index = point.y;
+
+            const color = "#fff"; // Engel rengi
+
+            ctx.fillStyle = color;
+            ctx.fillRect(x_index * square_scale, y_index * square_scale, square_scale, square_scale);
+        });
+    }
+
+    // Engelleri oluştur ve çiz
+    createObstacles();
 
     function generate_squares() {
         ctx.clearRect(0, 0, x, y)
@@ -98,6 +144,8 @@
                 }
             });
         });
+
+        drawObstacles()
         window.requestAnimationFrame(generate_squares);
     }
 
