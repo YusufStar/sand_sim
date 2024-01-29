@@ -25,9 +25,9 @@
     const ctx = canvas.getContext("2d");
     const x = 800;
     const y = 800;
-    const square_scale = 4;
+    const square_scale = 6;
     let lastRenderTime = 0;
-    const fpsInterval = 1000 / 120; // Hedeflenen FPS: 120
+    const fpsInterval = 1000 / 60; // Hedeflenen FPS: 120
 
     let arr = [];
     let obstacles = [];
@@ -132,11 +132,11 @@
         const centerY = Math.round(y / square_scale / 2); // Yarı yükseklik
 
         // X ekseninde çizginin uzunluğu
-        const lineLength = Math.round(x / square_scale / 2);
+        const lineLength = Math.round(x / square_scale / 4);
 
         // Çizginin her bir noktasını engel olarak işaretle
         for (let i = 0; i < lineLength; i++) {
-            obstacles.push({ x: i, y: centerY });
+            obstacles.push({ x: i + 50, y: centerY });
         }
     }
 
