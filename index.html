@@ -11,9 +11,9 @@
 <body>
 <canvas
         id="canvas"
-        width="400px"
-        height="400px"
-        style="background-color: black; width: 400px; height: 400px;">
+        width="800px"
+        height="800px"
+        style="background-color: black; width: 800px; height: 800px;">
 </canvas>
 
 <button id="reset-btn">
@@ -23,9 +23,11 @@
 <script>
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    const x = 400;
-    const y = 400;
-    const square_scale = 2;
+    const x = 800;
+    const y = 800;
+    const square_scale = 4;
+    let lastRenderTime = 0;
+    const fpsInterval = 1000 / 120; // Hedeflenen FPS: 120
 
     let arr = [];
     let obstacles = [];
@@ -35,39 +37,44 @@
             const newRow = Array.from({length: x / square_scale}, () => 0);
             arr.push(newRow);
         }
-
-        window.requestAnimationFrame(generate_squares);
     }
 
-    function moveSquares() {
-        let moved = false;
+    function moveSquares(currentTime) {
+        const elapsed = currentTime - lastRenderTime;
 
-        for (let i = arr.length - 2; i >= 0; i--) {
-            for (let j = 0; j < arr[i].length; j++) {
-                if (arr[i][j] === 1) {
-                    // Karelerin altında boş alan veya engel var mı kontrol et
-                    if ((i < arr.length - 1 && (arr[i + 1][j] === 0 || arr[i + 1][j] === 2)) || (i === arr.length - 2 && arr[i + 1][j] !== 1)) {
-                        if (!isObstacle(j, i + 1)) { // Engellerin üzerinde değil mi?
-                            arr[i][j] = 0;
-                            arr[i + 1][j] = 1;
-                            moved = true;
-                        }
-                    } else {
-                        // Altında boş alan yoksa, yanındaki boş alanlara bak
-                        if (j > 0 && j < arr[i].length - 1) {
-                            if (((arr[i + 1][j - 1] === 0 || arr[i + 1][j - 1] === 2) && (arr[i][j - 1] === 0 || arr[i][j - 1] === 2)) ||
-                                ((arr[i + 1][j + 1] === 0 || arr[i + 1][j + 1] === 2) && (arr[i][j + 1] === 0 || arr[i][j + 1] === 2))) {
-                                if (Math.random() < 0.5 && (arr[i + 1][j - 1] === 0 || arr[i + 1][j - 1] === 2) && (arr[i][j - 1] === 0 || arr[i][j - 1] === 2)) {
-                                    if (!isObstacle(j - 1, i + 1)) { // Engellerin üzerinde değil mi?
-                                        arr[i][j] = 0;
-                                        arr[i + 1][j - 1] = 1;
-                                        moved = true;
-                                    }
-                                } else if ((arr[i + 1][j + 1] === 0 || arr[i + 1][j + 1] === 2) && (arr[i][j + 1] === 0 || arr[i][j + 1] === 2)) {
-                                    if (!isObstacle(j + 1, i + 1)) { // Engellerin üzerinde değil mi?
-                                        arr[i][j] = 0;
-                                        arr[i + 1][j + 1] = 1;
-                                        moved = true;
+        // Belirlenen FPS aralığında mı kontrol et
+        if (elapsed > fpsInterval) {
+            lastRenderTime = currentTime - (elapsed % fpsInterval);
+
+            let moved = false;
+
+            for (let i = arr.length - 2; i >= 0; i--) {
+                for (let j = 0; j < arr[i].length; j++) {
+                    if (arr[i][j] === 1) {
+                        // Karelerin altında boş alan veya engel var mı kontrol et
+                        if ((i < arr.length - 1 && (arr[i + 1][j] === 0 || arr[i + 1][j] === 2)) || (i === arr.length - 2 && arr[i + 1][j] !== 1)) {
+                            if (!isObstacle(j, i + 1)) { // Engellerin üzerinde değil mi?
+                                arr[i][j] = 0;
+                                arr[i + 1][j] = 1;
+                                moved = true;
+                            }
+                        } else {
+                            // Altında boş alan yoksa, yanındaki boş alanlara bak
+                            if (j > 0 && j < arr[i].length - 1) {
+                                if (((arr[i + 1][j - 1] === 0 || arr[i + 1][j - 1] === 2) && (arr[i][j - 1] === 0 || arr[i][j - 1] === 2)) ||
+                                    ((arr[i + 1][j + 1] === 0 || arr[i + 1][j + 1] === 2) && (arr[i][j + 1] === 0 || arr[i][j + 1] === 2))) {
+                                    if (Math.random() < 0.5 && (arr[i + 1][j - 1] === 0 || arr[i + 1][j - 1] === 2) && (arr[i][j - 1] === 0 || arr[i][j - 1] === 2)) {
+                                        if (!isObstacle(j - 1, i + 1)) { // Engellerin üzerinde değil mi?
+                                            arr[i][j] = 0;
+                                            arr[i + 1][j - 1] = 1;
+                                            moved = true;
+                                        }
+                                    } else if ((arr[i + 1][j + 1] === 0 || arr[i + 1][j + 1] === 2) && (arr[i][j + 1] === 0 || arr[i][j + 1] === 2)) {
+                                        if (!isObstacle(j + 1, i + 1)) { // Engellerin üzerinde değil mi?
+                                            arr[i][j] = 0;
+                                            arr[i + 1][j + 1] = 1;
+                                            moved = true;
+                                        }
                                     }
                                 }
                             }
@@ -75,11 +82,31 @@
                     }
                 }
             }
+
+            if (moved) {
+                draw();
+            }
         }
 
-        if (moved) {
-            setTimeout(moveSquares, 100);
-        }
+        window.requestAnimationFrame(moveSquares);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, x, y);
+        arr.forEach((row, y_index) => {
+            row.forEach((val, x_index) => {
+                if (val === 1) {
+                    const color = `hsl(${y_index * 5}, 70%, 50%)`; // HSL renk değerini y eksenine göre belirliyoruz
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x_index * square_scale, y_index * square_scale, square_scale, square_scale);
+                } else {
+                    ctx.strokeStyle = "#1f1c1c";
+                    ctx.strokeRect(x_index * square_scale, y_index * square_scale, square_scale, square_scale);
+                }
+            });
+        });
+
+        drawObstacles();
     }
 
     function isObstacle(x, y) {
@@ -98,7 +125,6 @@
         };
 
         arr[location.y][location.x] = 1;
-        moveSquares();
     });
 
     // Yatay bir çizgi oluştur
@@ -130,26 +156,8 @@
     // Engelleri oluştur ve çiz
     createObstacles();
 
-    function generate_squares() {
-        ctx.clearRect(0, 0, x, y)
-        arr.forEach((row, y_index) => {
-            row.forEach((val, x_index) => {
-                if (val === 1) {
-                    const color = `hsl(${y_index * 5}, 70%, 50%)`; // HSL renk değerini y eksenine göre belirliyoruz
-                    ctx.fillStyle = color;
-                    ctx.fillRect(x_index * square_scale, y_index * square_scale, square_scale, square_scale);
-                } else {
-                    ctx.strokeStyle = "#1f1c1c";
-                    ctx.strokeRect(x_index * square_scale, y_index * square_scale, square_scale, square_scale);
-                }
-            });
-        });
-
-        drawObstacles()
-        window.requestAnimationFrame(generate_squares);
-    }
-
     createArray();
+    window.requestAnimationFrame(moveSquares);
 </script>
 </body>
 </body>
